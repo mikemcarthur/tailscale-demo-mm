@@ -20,7 +20,7 @@ resource "tailscale_tailnet_key" "operator" {
   reusable      = true
   ephemeral     = false
   preauthorized = true
-  description   = "tailscale-demo-mm: Kubernetes Operator auth key"
+  description   = "tailscale-demo-mm Kubernetes Operator auth key"
   tags          = ["tag:k8s-operator"]
   expiry        = 7776000
 }
