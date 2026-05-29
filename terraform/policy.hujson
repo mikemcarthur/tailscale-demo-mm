@@ -7,11 +7,11 @@
 
 {
   "tagOwners": {
-    "tag:app-public":   ["group:admin"],
-    "tag:app-admin":    ["group:admin"],
-    "tag:k8s-operator": ["group:admin"],
+  "tag:app-public":   ["group:admin", "tag:k8s-operator"],
+  "tag:app-admin":    ["group:admin", "tag:k8s-operator"],
+  "tag:k8s-operator": ["group:admin"],
   },
-
+           
   "groups": {
     "group:admin":      ${admin_emails},
     "group:contractor": ${contractor_emails},
