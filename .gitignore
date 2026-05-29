@@ -1,0 +1,21 @@
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate*
+terraform/terraform.tfvars
+terraform/*.auto.tfvars
+
+# Generated Kubernetes secrets
+kubernetes/operator/operator-secret.yaml
+
+# Local environment
+.env
+*.env
+!*.example.env
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
