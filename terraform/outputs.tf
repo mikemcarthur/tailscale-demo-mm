@@ -3,11 +3,6 @@ output "tailnet_name" {
   value       = var.tailnet_name
 }
 
-output "operator_auth_key_id" {
-  description = "Tailscale auth key ID for the Kubernetes Operator"
-  value       = tailscale_tailnet_key.operator.id
-}
-
 output "operator_secret_manifest_path" {
   description = "Path to the generated Kubernetes Secret manifest for the operator"
   value       = local_sensitive_file.operator_secret.filename

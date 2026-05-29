@@ -15,17 +15,9 @@ resource "tailscale_acl" "demo" {
   overwrite_existing_content = true
 }
 
-# Auth key the Kubernetes Operator will use to join the tailnet.
-resource "tailscale_tailnet_key" "operator" {
-  reusable      = true
-  ephemeral     = false
-  preauthorized = true
-  description   = "tailscale-demo-mm Kubernetes Operator auth key"
-  tags          = ["tag:k8s-operator"]
-  expiry        = 7776000
-}
-
-# Write the auth key to a Kubernetes Secret manifest the Helm install can consume.
+# Write the OAuth credentials to a Kubernetes Secret manifest the operator consumes.
+# The operator uses these credentials to dynamically create the auth keys it needs
+# for its managed proxy pods.
 resource "local_sensitive_file" "operator_secret" {
   filename        = "${path.module}/../kubernetes/operator/operator-secret.yaml"
   file_permission = "0600"
@@ -39,7 +31,8 @@ resource "local_sensitive_file" "operator_secret" {
     }
     type = "Opaque"
     stringData = {
-      authkey = tailscale_tailnet_key.operator.key
+      client_id     = var.tailscale_oauth_client_id
+      client_secret = var.tailscale_oauth_client_secret
     }
   })
 }
