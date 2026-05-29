@@ -1,0 +1,39 @@
+// Grants policy for tailscale-demo-mm.
+//
+// Two human identity groups: admin and contractor.
+// Three service tags: app-public (it-tools), app-admin (status-page), k8s-operator.
+//
+// Default-deny is implicit. Only the grants below are allowed.
+
+{
+  "tagOwners": {
+    "tag:app-public":   ["group:admin"],
+    "tag:app-admin":    ["group:admin"],
+    "tag:k8s-operator": ["group:admin"],
+  },
+
+  "groups": {
+    "group:admin":      ${admin_emails},
+    "group:contractor": ${contractor_emails},
+  },
+
+  "grants": [
+    {
+      "src": ["group:admin"],
+      "dst": ["tag:app-public", "tag:app-admin"],
+      "ip":  ["tcp:443"],
+    },
+    {
+      "src": ["group:contractor"],
+      "dst": ["tag:app-public"],
+      "ip":  ["tcp:443"],
+    },
+    {
+      "src": ["tag:k8s-operator"],
+      "dst": ["tag:app-public", "tag:app-admin"],
+      "ip":  ["*"],
+    },
+  ],
+
+  "ssh": [],
+}

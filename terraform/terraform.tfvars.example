@@ -1,0 +1,21 @@
+# Copy this file to terraform.tfvars and fill in real values.
+# terraform.tfvars is gitignored, never commit it.
+
+# Your tailnet name. Find this in the Tailscale admin console.
+tailnet_name = "<your-tailnet-name>.ts.net"
+
+# OAuth client credentials. Generate in Tailscale admin console.
+# Required scopes: policy_file:write, auth_keys:write, devices:read.
+# Must be tagged with tag:k8s-operator.
+tailscale_oauth_client_id     = "<your-oauth-client-id>"
+tailscale_oauth_client_secret = "<your-oauth-client-secret>"
+
+# Admin group: Google accounts with full access to both demo apps.
+admin_emails = [
+  "<your-admin-account>@gmail.com",
+]
+
+# Contractor group: Google accounts with access to it-tools only.
+contractor_emails = [
+  "<your-contractor-account>@gmail.com",
+]
