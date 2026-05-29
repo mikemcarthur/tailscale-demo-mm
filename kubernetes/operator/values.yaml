@@ -1,0 +1,21 @@
+# Tailscale Kubernetes Operator values.
+# The operator authenticates with OAuth credentials stored in the operator-oauth Secret
+# (created by Terraform). It dynamically creates auth keys for its managed proxy pods.
+
+# The operator pod itself joins the tailnet with this hostname.
+operatorConfig:
+  hostname: "k8s-operator-demo"
+
+# OAuth client credentials live in this pre-existing Secret.
+oauth:
+  existingSecret: "operator-oauth"
+
+# Resource requests/limits. Operator is lightweight.
+operator:
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
