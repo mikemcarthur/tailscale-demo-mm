@@ -280,12 +280,14 @@ Where the AI was helpful: it flagged that Tailscale now recommends Grants over A
 Where the AI was unhelpful or wrong: the AI confidently recommended the Tailscale operator's `tailscale.com/expose` annotation pattern as the canonical way to expose a Service to the tailnet, and it took us nearly an hour of debugging — including diagnostic calls into the proxy pod with `tailscale serve get-config` — to discover that the operator was failing to program a serve config silently. The AI's recommendation reflected what was true in older Tailscale documentation; the operator's behavior had shifted. The lesson: AI-assisted research is fastest when you treat its outputs as a *starting point* for verification against current product behavior, not as authoritative.
 
 ## Repository layout
-
+```
 tailscale-demo-mm/
 ├── README.md
 ├── Makefile
 ├── docs/
-│   └── architecture.png
+│   ├── architecture.png
+│   ├── architecture.svg
+│   └── screenshots/
 ├── terraform/
 │   ├── main.tf
 │   ├── policy.hujson
@@ -295,21 +297,14 @@ tailscale-demo-mm/
 │   └── terraform.tfvars.example
 ├── kubernetes/
 │   ├── operator/
-│   │   ├── values.yaml
-│   │   └── README.md
+│   │   └── values.yaml
 │   └── apps/
 │       ├── namespace.yaml
-│       ├── networkpolicy.yaml
 │       ├── it-tools.yaml
 │       └── status-page.yaml
-├── apps/
-│   └── status-page/
-│       ├── Dockerfile
-│       ├── index.html
-│       └── server.py
 └── tests/
-└── verify.sh
-
+    └── verify.sh
+```
 ## Cleanup
 
 ```bash
