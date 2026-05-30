@@ -239,8 +239,6 @@ I did not use AI for:
 
 Where the AI was helpful: it flagged that Tailscale now recommends Grants over ACLs, which I would not have known to use otherwise. It also flagged that Workload Identity Federation is the recommended auth path for GitHub Actions over OAuth client secrets, which I noted in the "what I'd do differently" section even though we cut the CI/CD piece from the build.
 
-Where the AI was unhelpful or wrong:
-
 Where the AI was unhelpful or wrong: the AI confidently recommended the Tailscale operator's `tailscale.com/expose` annotation pattern as the canonical way to expose a Service to the tailnet, and it took us nearly an hour of debugging — including diagnostic calls into the proxy pod with `tailscale serve get-config` — to discover that the operator was failing to program a serve config silently. The AI's recommendation reflected what was true in older Tailscale documentation; the operator's behavior had shifted. The lesson: AI-assisted research is fastest when you treat its outputs as a *starting point* for verification against current product behavior, not as authoritative.
 
 ## Repository layout
@@ -250,7 +248,7 @@ tailscale-demo-mm/
 ├── SECURITY.md
 ├── Makefile
 ├── docs/
-│   ├── architecture.png
+│   └── architecture.png
 ├── terraform/
 │   ├── main.tf
 │   ├── policy.hujson
