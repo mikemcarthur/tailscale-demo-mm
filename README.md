@@ -31,7 +31,7 @@ Two services run in a Kubernetes namespace (`tailscale-demo`):
 - **it-tools**, an open-source collection of developer utilities (JSON formatters, regex testers, hash generators). Stands in for any "low-sensitivity internal tool." Tagged `tag:app-public`.
 - **status-page**, a small custom dashboard showing cluster health. Stands in for "privileged internal tool." Tagged `tag:app-admin`.
 
-Each service is exposed to the tailnet by the **Tailscale Kubernetes Operator**, which runs a small proxy pod per service. The proxy joins the tailnet as a node and forwards traffic to the underlying Kubernetes Service. The services themselves have **no Ingress, no LoadBalancer of type external, no public DNS record, no TLS certificate from a public CA.** They are not reachable from the internet.
+Each service runs with a Tailscale sidecar container alongside the application pod. The sidecar runs tailscaled, joins the tailnet as a node, and uses a serve-config.json (mounted from a ConfigMap) to forward incoming tailnet traffic to the application container. The Tailscale Kubernetes Operator is installed to manage tailnet credentials and tag assignment, but per-service exposure is handled by the sidecars see What was difficult or surprising for why I moved off the operator's expose annotation.The services themselves have **no Ingress, no LoadBalancer of type external, no public DNS record, no TLS certificate from a public CA.** They are not reachable from the internet.
 
 Two human identities exist on the tailnet:
 
@@ -214,13 +214,14 @@ The cluster's CNI doesn't matter. I used Cilium, but the Tailscale Operator work
 
 ## What worked well
 
-The Tailscale Operator was the right primitive for this. I considered three deployment patterns:
+I considered three deployment patterns: 
+(1) the Operator's expose annotation, which programs a proxy pod per Service; 
+(2) a subnet router on a node, which exposes a CIDR rather than a service; 
+(3) a Tailscale sidecar per application pod with an explicit serve-config.json. 
 
-1. Tailscale as a sidecar in each application pod. Works, but couples deployment lifecycle of the app and the tunnel.
-2. Tailscale as a subnet router on a node. Works, but exposes more than I want, and the access pattern is "you can reach a subnet" not "you can reach a service."
-3. The Operator. Exposes Kubernetes Services individually, with per-service tags, managed declaratively via annotations.
+I started with the Operator's expose mode for its declarative feel, but it failed opaquely (documented below) and I shipped the sidecar pattern — it's what Tailscale's own Kubernetes examples use, its logs are clearer, and the per-service serve-config.json makes the forwarding rules explicit and reviewable.
 
-The Operator pattern made the access policy *legible*. Reading the Grants file tells you exactly which user groups can reach which service tags. That's a property I want.
+The access policy stays legible either way: reading the Grants file tells you exactly which user groups can reach which service tags. That's the property I care about.
 
 The Grants policy file being a single source of truth, managed in Terraform, also worked well. Every access decision in the demo can be traced to a specific line in that file. Code review of access changes becomes plausible. This is the part that resonates with how enterprises think about access management: not just "we have ACLs" but "our access policy is reviewed in PRs like any other code change."
 
