@@ -189,11 +189,17 @@ The Grants policy file being a single source of truth, managed in Terraform, als
 
 ## What was difficult or surprising
 
-*(This section will be filled in with real findings during the build. Placeholders below.)*
+A handful of things that took longer than I expected, or behaved differently than the docs suggested. These are the kind of operational nuances that don't show up in tutorials.
 
-- *(Placeholder: integration friction or learning curve I hit)*
-- *(Placeholder: a thing that wasn't obvious from the docs)*
-- *(Placeholder: a moment I had to choose between two valid approaches)*
+**Auth key descriptions reject certain characters.** Tailscale's API rejected my initial auth key description, "tailscale-demo-mm: Kubernetes Operator auth key," with a 400 error: `description had invalid characters`. The offending character was the colon. The Terraform provider docs don't enumerate which characters are valid, so this surfaces only at apply time. Removing the colon resolved it. Worth knowing if you template auth key descriptions across many environments — keep them alphanumeric with hyphens.
+
+**OAuth client tag scope and the policy's tagOwners are two independent authorization layers, and both must align.** I scoped my OAuth client to `tag:k8s-operator`, thinking that was sufficient. The operator then failed to create proxy pods tagged `tag:app-public` with the error "requested tags are invalid or not permitted." The fix required both: expanding the OAuth client's tag scope to include all the tags it would issue, AND listing `tag:k8s-operator` as a tagOwner in the policy file for those same tags. The OAuth client's scope controls *what tokens it can mint*. The policy's tagOwners controls *what identities can claim a tag*. The operator needs both. Easy to misconfigure, hard to diagnose from the error message alone.
+
+**The Tailscale operator's Service-exposure mode didn't program a serve config.** I started by using the operator's `tailscale.com/expose: "true"` annotation pattern, where the operator creates proxy StatefulSets for each annotated Service. The proxy pods came up, joined the tailnet, and accepted WireGuard connections — but `tailscale serve status` inside the proxy returned `No serve config`, and all TCP traffic timed out. After enough investigation to confirm this wasn't policy-related or network-related (the proxy could reach the upstream Service from inside itself), I pivoted to the Tailscale sidecar pattern: each application Pod runs a tailscaled sidecar with a ConfigMap-mounted `serve-config.json` that defines the forwarding rules explicitly. The sidecar pattern is what Tailscale's own Kubernetes examples use. It works reliably, has clearer logs, and was the better choice once I saw it. The lesson: when a tutorial-style abstraction fails opaquely, drop down a level. The lower-level pattern is usually clearer and almost always more reliable.
+
+**Browser caching can mask the moment of revocation.** When testing the access-revocation flow, I would revoke the contractor's policy access, see `tailscale status` correctly drop the it-tools device from the contractor's view, and then refresh Firefox to confirm — and Firefox would still render the it-tools page. For a few seconds I thought revocation wasn't working. It was; Firefox was serving the cached page from earlier without ever making a new network request. Private browsing mode (or aggressively clearing cache) shows the unambiguous network-level failure. For a live demo, this is a presentation lesson: always revoke into a private browsing window, or the audience will see a cached success state and the moment loses its punch.
+
+**Identical credentials don't always mean identical authorization.** When I changed the OAuth client's authorized tags in the admin console, the credentials themselves stayed the same. I expected the operator to immediately pick up the new permissions on its next API call. It didn't, until I restarted the operator pod. Tailscale's coordination server can cache token capabilities; the cache invalidates on token re-issuance or on client restart. For Terraform-managed deployments, this means changes to OAuth client tag scope may require a `kubectl rollout restart` to take effect, even though `terraform apply` reported success. Worth documenting in any runbook.
 
 ## Security considerations
 
@@ -233,7 +239,9 @@ I did not use AI for:
 
 Where the AI was helpful: it flagged that Tailscale now recommends Grants over ACLs, which I would not have known to use otherwise. It also flagged that Workload Identity Federation is the recommended auth path for GitHub Actions over OAuth client secrets, which I noted in the "what I'd do differently" section even though we cut the CI/CD piece from the build.
 
-Where the AI was unhelpful or wrong: *(placeholder, will fill in with real instances during the build)*
+Where the AI was unhelpful or wrong:
+
+Where the AI was unhelpful or wrong: the AI confidently recommended the Tailscale operator's `tailscale.com/expose` annotation pattern as the canonical way to expose a Service to the tailnet, and it took us nearly an hour of debugging — including diagnostic calls into the proxy pod with `tailscale serve get-config` — to discover that the operator was failing to program a serve config silently. The AI's recommendation reflected what was true in older Tailscale documentation; the operator's behavior had shifted. The lesson: AI-assisted research is fastest when you treat its outputs as a *starting point* for verification against current product behavior, not as authoritative.
 
 ## Repository layout
 
@@ -243,8 +251,6 @@ tailscale-demo-mm/
 ├── Makefile
 ├── docs/
 │   ├── architecture.png
-│   ├── demo-flow.md
-│   └── slides-outline.md
 ├── terraform/
 │   ├── main.tf
 │   ├── policy.hujson
