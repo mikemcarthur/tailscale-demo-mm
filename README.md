@@ -150,6 +150,43 @@ curl https://status-page.<tailnet>.ts.net                 # Connection refused, 
 
 The difference between "HTTP 403" and "connection refused" is the substance of the demo. With a traditional reverse proxy, the request reaches the server and the server says no. With Tailscale Grants, the packet never leaves the contractor's laptop. The denial is enforced at the network layer, before any application sees the traffic.
 
+### Validation evidence
+
+Screenshots captured during a working deployment, with tailnet names and account identifiers redacted:
+
+**Admin identity reaches both apps:**
+
+![Admin: it-tools in Firefox](docs/screenshots/01-admin-it-tools-firefox.png)
+*it-tools rendered in admin's Firefox.*
+
+![Admin: status-page in Firefox](docs/screenshots/02-admin-status-page-firefox.png)
+*status-page rendered in admin's Firefox, showing live cluster data.*
+
+![Admin: tailscale status](docs/screenshots/03-admin-tailscale-status.png)
+*`tailscale status` from admin-laptop. Both apps appear as tagged devices on the tailnet.*
+
+![Admin: curl results](docs/screenshots/04-admin-curl-success.png)
+*`curl` from admin-laptop. Both apps return HTTP/2 200.*
+
+**Contractor identity sees only what the policy permits:**
+
+![Contractor: it-tools in Firefox](docs/screenshots/05-contractor-it-tools-firefox.png)
+*it-tools renders for the contractor identity.*
+
+![Contractor: status-page denied](docs/screenshots/06-contractor-status-page-denied.png)
+*status-page fails to connect from contractor's Firefox.*
+
+![Contractor: tailscale status](docs/screenshots/07-contractor-tailscale-status.png)
+*`tailscale status` from contractor-laptop. it-tools is visible; status-page is filtered out because the contractor's identity has no grant to reach it.*
+
+![Contractor: curl results](docs/screenshots/08-contractor-curl-allowed-and-denied.png)
+*`curl` from contractor-laptop. it-tools returns HTTP/2 200. status-page hangs and times out with no HTTP response.*
+
+**Admin console:**
+
+![Tailscale admin console](docs/screenshots/09-tailscale-admin-console-machines.png)
+*The Tailscale admin console showing all devices on the tailnet with their tags.*
+
 ### The revocation moment
 
 ```bash
