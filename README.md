@@ -94,7 +94,7 @@ This runs `terraform apply` against the `tailscale/tailscale` Terraform provider
 - The user groups (`group:admin`, `group:contractor`)
 - An auth key for the operator (tagged `tag:k8s-operator`, time-limited)
 
-The auth key is written to a Kubernetes Secret manifest at `kubernetes/operator/operator-secret.yaml`, which is gitignored.
+Terraform also mints a time-limited auth key per application sidecar and writes all three Secret manifests locally: kubernetes/operator/operator-secret.yaml, kubernetes/apps/it-tools-secret.yaml, and kubernetes/apps/status-page-secret.yaml. All three are gitignored — they never enter version control, and a fresh clone regenerates them when you run make tailnet (or make up).
 
 ### 3. Install the Tailscale Kubernetes Operator
 
