@@ -7,7 +7,8 @@ terraform/*.auto.tfvars
 
 # Generated Kubernetes secrets
 kubernetes/operator/operator-secret.yaml
-
+kubernetes/apps/it-tools-secret.yaml
+kubernetes/apps/status-page-secret.yaml
 # Local environment
 .env
 *.env
