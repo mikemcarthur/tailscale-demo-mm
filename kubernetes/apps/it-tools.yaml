@@ -1,0 +1,131 @@
+# Serve config for the Tailscale sidecar.
+# Tells tailscaled to listen on tailnet port 443 with HTTPS and forward to localhost:80.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: it-tools-serve-config
+  namespace: tailscale-demo
+data:
+  serve-config.json: |
+    {
+      "TCP": {
+        "443": {
+          "HTTPS": true
+        }
+      },
+      "Web": {
+        "${TS_CERT_DOMAIN}:443": {
+          "Handlers": {
+            "/": {
+              "Proxy": "http://127.0.0.1:80"
+            }
+          }
+        }
+      }
+    }
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: it-tools-tailscale
+  namespace: tailscale-demo
+---
+# Role lets the sidecar create/update its state Secret for persistence
+# across pod restarts.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: it-tools-tailscale
+  namespace: tailscale-demo
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: it-tools-tailscale
+  namespace: tailscale-demo
+subjects:
+  - kind: ServiceAccount
+    name: it-tools-tailscale
+    namespace: tailscale-demo
+roleRef:
+  kind: Role
+  name: it-tools-tailscale
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: it-tools
+  namespace: tailscale-demo
+  labels:
+    app: it-tools
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: it-tools
+  template:
+    metadata:
+      labels:
+        app: it-tools
+    spec:
+      serviceAccountName: it-tools-tailscale
+      containers:
+        # The actual it-tools application.
+        - name: it-tools
+          image: ghcr.io/corentinth/it-tools:latest
+          ports:
+            - name: http
+              containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+
+        # Tailscale sidecar. Joins the tailnet with tag:app-public via the
+        # auth key in the it-tools-tailscale-authkey Secret. Forwards
+        # incoming tailnet HTTPS to the it-tools container on localhost:80.
+        - name: tailscale
+          image: tailscale/tailscale:v1.78.1
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: it-tools-tailscale-authkey
+                  key: TS_AUTHKEY
+            - name: TS_HOSTNAME
+              value: "it-tools"
+            - name: TS_KUBE_SECRET
+              value: "it-tools-tailscale-state"
+            - name: TS_USERSPACE
+              value: "true"
+            - name: TS_ACCEPT_DNS
+              value: "false"
+            - name: TS_SERVE_CONFIG
+              value: "/etc/tailscale/serve-config.json"
+          volumeMounts:
+            - name: serve-config
+              mountPath: /etc/tailscale
+              readOnly: true
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+
+      volumes:
+        - name: serve-config
+          configMap:
+            name: it-tools-serve-config

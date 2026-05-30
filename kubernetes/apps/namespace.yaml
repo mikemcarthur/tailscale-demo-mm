@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tailscale-demo
+  labels:
+    name: tailscale-demo
+    purpose: tailscale-se-demo
