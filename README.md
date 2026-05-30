@@ -239,8 +239,9 @@ A handful of things that took longer than I expected, or behaved differently tha
 **Identical credentials don't always mean identical authorization.** When I changed the OAuth client's authorized tags in the admin console, the credentials themselves stayed the same. I expected the operator to immediately pick up the new permissions on its next API call. It didn't, until I restarted the operator pod. Tailscale's coordination server can cache token capabilities; the cache invalidates on token re-issuance or on client restart. For Terraform-managed deployments, this means changes to OAuth client tag scope may require a `kubectl rollout restart` to take effect, even though `terraform apply` reported success. Worth documenting in any runbook.
 
 ## Security considerations
+This demo defends against public attack surface, network-location-based trust, and stale-credential risk. The two services have no public DNS, no public IP, no Ingress, and no public TLS certificate; access is granted by SSO-backed identity rather than network location; and revoking a user is a single change to the Grants policy that propagates to every device within seconds.
 
-A short threat model lives in [SECURITY.md](./SECURITY.md). Briefly: this demo defends against public attack surface, network-location-based trust, and stale-credential risk. It does not, by itself, defend against compromised client devices, application-layer vulnerabilities, or supply-chain attacks on the Tailscale control plane itself. The SECURITY.md file names each of these and describes what I'd add in production to close the gap.
+The demo does not, on its own, defend against compromised client devices (Tailscale gates network access but cannot detect malware on an authorized laptop), application-layer vulnerabilities (the apps themselves trust anyone the policy lets through), supply-chain attacks on the Tailscale operator or sidecar images, or compromise of the Tailscale coordination plane itself. The "what I would do differently with more time" section below names the controls that would close each gap in production — application-layer auth, device posture checks, Tailnet Lock, image digest pinning, and SIEM-streamed audit logs.
 
 ## What I would do differently with more time
 
@@ -282,7 +283,6 @@ Where the AI was unhelpful or wrong: the AI confidently recommended the Tailscal
 
 tailscale-demo-mm/
 ├── README.md
-├── SECURITY.md
 ├── Makefile
 ├── docs/
 │   └── architecture.png
